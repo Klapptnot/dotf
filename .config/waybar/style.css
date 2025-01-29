@@ -40,8 +40,35 @@ tooltip > * {
   padding: 0px;
 }
 
+#tray {
+  font-size: 10px;
+  background-color: rgba(17, 17, 27, 0.4);
+  border-radius: 2px;
+  margin: 1px;
+  padding: 1px;
+  transition: none;
+}
+
 #tray menu separator {
   min-height: 2px;
+  background-color: rgba(17, 17, 27, 0.4);
+}
+
+#tray menu label {
+  padding: 4px;
+}
+
+#tray menu box {
+  padding: 0px;
+}
+
+#tray menu box image {
+  padding: 4px;
+  padding-right: 0px;
+}
+#tray menu box  {
+  padding: 4px;
+  padding-left: 0px;
 }
 
 /* Single elements */
