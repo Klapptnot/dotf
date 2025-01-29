@@ -37,7 +37,7 @@ BASHRC_SOURCED=(
   "${HOME}/.config/bash/goto.sh"               # Add cd helper
   "${HOME}/.config/bash/mirkop.sh"             # Change prompt
   "${HOME}/.config/bash/functions.sh"          # Load util functions
-  "${HOME}/.config/bash/carapace.sh"           # Load carapace completion
+  # "${HOME}/.config/bash/carapace.sh"           # Load carapace completion
   # "/usr/share/bash-completion/bash_completion" # Load bash completion
 )
 

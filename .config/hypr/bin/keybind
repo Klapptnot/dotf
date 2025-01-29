@@ -75,7 +75,7 @@ function show_window {
 
   # Detect monitor resolution and scale
   IFS=' ' read -r WIDTH HEIGHT SCALE < <(hyprctl -j monitors |
-    jq -rM '.[] | select(.focused==true) | [ (.width|tostring), (.height|tostring), (.scale|tostring) ] | join(" ")')
+    jq -rM '.[] | select(.focused==true) | "\(.width|tostring) \(.height|tostring) \(.scale|tostring)"')
 
   # https://community.unix.com/t/how-to-get-the-ceiling-value-for-floating-numbers
   # Calculate width and height based on percentages and monitor resolution

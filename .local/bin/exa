@@ -14,15 +14,19 @@ function main {
   barg.parse "${@}" << BARG || show_usage=true
   #[progname='${MEAKA}']
   #[reqextras='true', extras='QUERY']
-  #[subcmds='help']
+  #[subcmds='help list']
 
+  # No subcommand options
   @ t/timeout[num] |> "5" => EXA_TIMEOUT
   @ T/tries[int] |> "5" => EXA_TRIES
   @ c/cookies[str] => EXA_COOKIES
   @ u/user-agent[str] |> "Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0" => EXA_USER_AGENT
   @ a/amount[int] |> "10" => EXA_RESULT_AMOUNT
   @ s/skip[int] |> "0" => EXA_RESULT_START
-  @ m/no-color[bool] => EXA_NO_COLOR
+  @ p/preset[str] => EXA_PRESET
+
+  # Global options
+  n/no-color[bool] => EXA_NO_COLOR
 BARG
 
   if ${show_usage}; then
@@ -33,6 +37,22 @@ BARG
   if [ "${BARG_SUBCOMMAND}" == 'help' ]; then
     show_help_message
     return 1
+  elif [ "${BARG_SUBCOMMAND}" == 'list' ]; then
+    if [ ! -f ~/.config/dotf/exa_presets.yaml ]; then
+      log e 'Failed to load presets: no such file ~/.config/dotf/exa_presets.yaml'
+      return 1
+    fi
+    mapfile -t names < <(grep -oP '^\w+' ~/.config/dotf/exa_presets.yaml)
+    mapfile -t presets < <(grep -oP '(?<=: ).*$' ~/.config/dotf/exa_presets.yaml)
+    for ((i = 0; i < ${#presets[@]}; i++)); do
+      if [[ -t 1 ]] && ! ${EXA_NO_COLOR}; then
+        printf '\x1b[38;2;255;169;140m- Name: \x1b[38;2;255;232;184m%s\n' "${names[i]}"
+        printf '  \x1b[38;2;195;79;230mFormat: \x1b[38;2;189;147;249m%s\x1b[0m\n' "${presets[i]}"
+      else
+        printf -- '- Name: %s\n  Format: %s\n' "${names[i]}" "${presets[i]}"
+      fi
+    done
+    return 1
   fi
 
   # shellcheck disable=SC2153
@@ -41,6 +61,20 @@ BARG
   if ((EXA_RESULT_AMOUNT < 1)) || ((EXA_RESULT_AMOUNT > 100)); then
     log i 'Invalid amount of results (%s), defaulting to 10' "${EXA_RESULT_AMOUNT}"
     EXA_RESULT_AMOUNT=10
+  fi
+
+  if [ -n "${EXA_PRESET}" ]; then
+    # shellcheck disable=SC1090
+    if [ ! -f ~/.config/dotf/exa_presets.yaml ]; then
+      log e 'Failed to load presets: no such file ~/.config/dotf/exa_presets.yaml'
+      return 1
+    fi
+    local preset_format='{{QUERY}}'
+    if ! preset_format=$(grep -oP "(?<=${EXA_PRESET}: ).*" ~/.config/dotf/exa_presets.yaml); then
+      log e 'Failed to get query from preset: no such preset "%s"' "${EXA_PRESET}"
+      return 1
+    fi
+    query="${preset_format//\{\{QUERY\}\}/${query}}"
   fi
 
   declare -A grequest=()
