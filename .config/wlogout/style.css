@@ -9,8 +9,8 @@ window {
 
 button {
   font-family: 'Plus Jakarta Sans';
-  color: #CBA6F7;
-  background-color: rgba(135, 00, 246, 0.2);
+  color: #cba6f7;
+  background-color: rgba(17, 17, 27, 0.4);
   outline-style: none;
   border: none;
   border-width: 0px;
@@ -25,12 +25,12 @@ button {
 }
 
 button:focus {
-  background-color: rgba(135, 00, 246, 0.4);
+  background-color: rgba(17, 17, 28, 0.6);
   background-size: 30%;
 }
 
 button:hover {
-  background-color: rgba(135, 00, 246, 0.6);
+  background-color: rgba(17, 17, 27, 0.8);
   background-size: 40%;
   animation: gradient_f 20s ease-in infinite;
   transition: all 0.3s cubic-bezier(.55, 0.0, .28, 1.682);

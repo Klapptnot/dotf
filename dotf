@@ -306,7 +306,7 @@ function backgrounds_manager {
       ((${#lines[@]} > 0)) && printf '%-20s %7s background(s) downloaded\n' "${lines[@]}"
       ;;
     download)
-      declare -A gtotl=()
+      declare -A g_total=()
       for grp in "${__groups[@]}"; do
         if ! ${BGM_ALL_GROUPS} && ! item_is_in_arr "${grp}" "${EXTRA_PARAMS[@]}"; then
           continue
@@ -314,38 +314,41 @@ function backgrounds_manager {
         mapfile -t it_name < <(yq -rM ".${grp}[] | .name" "${BGM_INDEX_FILE}")
         mapfile -t it_link < <(yq -rM ".${grp}[] | .link" "${BGM_INDEX_FILE}")
         local item_count="${#it_link[@]}"
-        local spin_count=0 #"${item_count}"
-        local skipped=0
-        gtotl["${grp}"]=0
+        local missing=()
+        g_total["${grp}"]=0
 
         for ((i = 0; i < item_count; i++)); do
-          if [ -e "${BGM_MAIN_FOLDER}/${it_name[i]}" ]; then
-            if ! ${FORCE_OPERATION}; then
-              log d 'File found, skipping %s' "${it_name[i]}"
-              ((skipped++))
-              # ((spin_count = item_count - skipped))
-              continue
-            fi
+          if [ ! -e "${BGM_MAIN_FOLDER}/${it_name[i]}" ]; then
+            missing+=("${i}")
+            continue
+          fi
+          if ${FORCE_OPERATION}; then
             log i 'File found, removing %s' "${it_name[i]}"
             rm "${BGM_MAIN_FOLDER:?}/${it_name[i]}" || continue
+            missing+=("${i}")
           fi
-          ((spin_count++))
-          spinner.start "Downloading files... ${gtotl["${grp}"]}/${spin_count}" &
+        done
+
+        local to_download="${#missing[@]}"
+        local total_downloaded=0
+        for ((i = 0; i < to_download; i++)); do
+          local index="${missing[i]}"
+          spinner.start "Downloading files... ${total_downloaded}/${to_download}" &
           SPINNER_PID=${!}
-          log d 'Downloading %s...' "${it_name[i]}"
-          if wget -P "${BGM_MAIN_FOLDER}" "${it_link[i]}" &> /dev/null; then
-            gtotl["${grp}"]=$((${gtotl["${grp}"]} + 1))
-            log d 'Downloaded successfully %s' "${it_name[i]}"
+          log d 'Downloading %s...' "${it_name[index]}"
+          if wget -P "${BGM_MAIN_FOLDER}" "${it_link[index]}" &> /dev/null; then
+            log d 'Downloaded successfully %s' "${it_name[index]}"
+            ((total_downloaded++))
           else
-            log e 'Failed to download %s' "${it_link[i]}"
+            log e 'Failed to download %s' "${it_link[index]}"
           fi
           spinner.stop "${SPINNER_PID}"
         done
-        gtotl["${grp}"]="${gtotl["${grp}"]}/$((item_count - skipped))"
+        g_total["${grp}"]="${total_downloaded}/${to_download}"
       done
 
-      for grp in "${!gtotl[@]}"; do
-        log i 'Group %s: %s downloaded' "${grp}" "${gtotl["${grp}"]}"
+      for grp in "${!g_total[@]}"; do
+        log i 'Group %s: %s downloaded' "${grp}" "${g_total["${grp}"]}"
       done
       ;;
     remove)
