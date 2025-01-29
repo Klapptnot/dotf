@@ -1,0 +1,101 @@
+#!/usr/bin/bash
+
+# shellcheck disable=SC1090
+source ~/.config/bash/lib/logger.sh
+
+# Sleep time in seconds
+readonly SLEEP_TIME="${SLEEP_TIME:-1}"
+# Service worker URL which is used to run js code
+readonly SERVICE_WORKER_URL='chrome-extension://eimadpbcbfnmbkopoojfekhnkhdbieeh/background/index.js'
+# Browser to use (only Chromium based browsers are supported)
+readonly BROWSER_BIN="${BROWSER_BIN:-google-chrome-stable}"
+readonly BROWSER_VANITY="${BROWSER_VANITY:-chrome}"
+# Array of arguments to launch the browser
+readonly ARGS_TO_LAUNCH=(
+  '--remote-debugging-port=9222'
+  '--remote-allow-origins=http://localhost:9222'
+  '--silent-launch'
+  '--no-startup-window'
+)
+# Array of CLI apps to check if they are installed
+readonly CLI_APPS=(
+  'jq'
+  'websocat'
+  'curl'
+  'pgrep'
+)
+
+function main {
+  local url="${1}"
+
+  if [[ -z "${url}" ]]; then
+    log error 'URL is required'
+    exit 1
+  fi
+  shift 1
+
+  # Check if the URL is a valid URL using regex
+  if ! [[ "${url}" =~ ^https?://([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,} ]]; then
+    log error 'URL is not valid: %s' "${url}"
+    exit 1
+  fi
+
+  for app in "${CLI_APPS[@]}"; do
+    if ! command -v "${app}" &> /dev/null; then
+      log error 'App is not installed: %s' "${app}"
+      exit 1
+    fi
+  done
+
+  # Check if the command line of the browser is available
+  if ! command -v "${BROWSER_BIN}" &> /dev/null; then
+    log error 'Browser is not installed: %s' "${BROWSER_BIN}"
+    exit 1
+  fi
+
+  # Check if an instance of the browser is running, which may not have the args needed
+  if pgrep -fa -- "${BROWSER_VANITY}" &> /dev/null; then
+    if ! pgrep -fa -- "${BROWSER_VANITY}" | grep -q -- "${ARGS_TO_LAUNCH[0]}" || ! pgrep -fa -- "${BROWSER_VANITY}" | grep -q -- "${ARGS_TO_LAUNCH[1]}"; then
+      log error 'Browser is running, but without the args needed... Maybe restart it'
+      exit 1
+    fi
+  else
+    # Launch the browser with the args needed
+    "${BROWSER_BIN}" "${ARGS_TO_LAUNCH[@]}" &> /dev/null &
+    log info 'Browser is not running, starting it...'
+    sleep "${SLEEP_TIME}"
+  fi
+
+  # Check if the browser is running, with the args needed
+  if ! pgrep -f -- "${BROWSER_VANITY}" &> /dev/null; then
+    log error 'Browser could not be started in time: %s' "${BROWSER_VANITY}"
+    exit 1
+  fi
+
+  # Get workers ID
+  read -r worker_ws_url < <(
+    curl -Ss http://localhost:9222/json |
+      jq -Mr '.[] | select(.url == "'"${SERVICE_WORKER_URL}"'") | .webSocketDebuggerUrl'
+  )
+
+  if [[ -z "${worker_ws_url}" ]]; then
+    log error 'Worker WebSocket URL is not found'
+    exit 1
+  fi
+
+  log info 'Worker WebSocket URL: %s' "${worker_ws_url}"
+
+  # Send the URL to the worker
+  local json_data='{"id": 1, "method": "Runtime.evaluate", "params": {"expression": "chrome.windows.create({url: \"'"${url}"'\", \"type\": \"popup\"})"}}'
+
+  log debug 'Sending the URL to the worker: %s' "${json_data}"
+
+  if ! websocat "${worker_ws_url}" <<< "${json_data}" &> /dev/null; then
+    log error 'Failed to launch the Web App'
+    exit 1
+  fi
+
+  log info 'Emulation of Web App: %s' "${url}"
+}
+
+main "${@}"

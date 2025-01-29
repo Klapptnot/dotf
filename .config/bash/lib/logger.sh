@@ -8,7 +8,7 @@ declare -rA LOGGER_LOG_COLORS=(
   ['c']='\x1b[30m\x1b[41m'
 )
 declare -rA LOGGER_LEVEL_NAMES=(
-  ['o']='debug'    # 0
+  ['o']='off'      # 0
   ['d']='debug'    # 1
   ['i']='info'     # 2
   ['w']='warn'     # 3

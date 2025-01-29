@@ -1,0 +1,10 @@
+track: site:https://open.spotify.com/track {{QUERY}}
+album: site:https://open.spotify.com/album {{QUERY}}
+artist: site:https://open.spotify.com/artist {{QUERY}}
+playlist: site:https://open.spotify.com/playlist {{QUERY}}
+user: site:https://open.spotify.com/user {{QUERY}}
+
+mxm: site:https://www.musixmatch.com/lyrics {{QUERY}}
+genius: site:https://genius.com {{QUERY}}
+lastfm: site:https://www.last.fm/music {{QUERY}}
+lyrfind: site:https://lyrics.lyricfind.com/lyrics {{QUERY}}
