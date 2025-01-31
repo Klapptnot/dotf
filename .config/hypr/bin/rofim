@@ -45,9 +45,9 @@ function main {
         wl-copy
       ;;
     emoji)
-      python3 ~/.config/hypr/bin/emoji.py list |
+      python3 ~/.config/hypr/bin/emojis.py list |
         rofi -dmenu -p ' 󰱨 Emoji ' -theme "${ROFI_THEME_HOME}/emoji.rasi" |
-        python3 ~/.config/hypr/bin/emoji.py decode |
+        python3 ~/.config/hypr/bin/emojis.py decode |
         wl-copy
       ;;
     wifi)
