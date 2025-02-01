@@ -14,7 +14,7 @@ configuration {
 window {
   height: 40%;
   width: 30%;
-  border-radius: 20px;
+  border-radius: 8px;
   background-color: @background;
   location: center;
 }

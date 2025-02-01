@@ -1,0 +1,14 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Name=WhatsApp Web
+GenericName=Instant Messaging App
+Comment=Voice and text instant messaging app.
+Exec=bash -c '~/.local/bin/lpwa https://web.whatsapp.com'
+Icon=whatsapp
+Type=Application
+Terminal=false
+Categories=Network;InstantMessaging;
+StartupWMClass=whatsapp-web
+X-GNOME-SingleWindow=true
+Keywords=Chat;Voice;

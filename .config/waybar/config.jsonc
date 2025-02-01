@@ -316,7 +316,7 @@
       "cpu",
       "memory"
       // "temperature", // For some reason, this does not work for me, idc
-      // "disk" # I don't need this
+      // "disk" // I don't need this
     ]
   },
   "group/audio-grp": {
