@@ -1,0 +1,14 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Name=Zoom Meetings Web
+GenericName=Zoom Us Workspace
+Comment=Virtual Meeting rooms web client
+Exec=bash -c '~/.local/bin/lpwa https://app.zoom.us/wc/'
+Icon=Zoom
+Type=Application
+Terminal=false
+Categories=Network;InstantMessaging;
+StartupWMClass=zoom-meetings-web
+X-GNOME-SingleWindow=true
+Keywords=Chat;Voice;

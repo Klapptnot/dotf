@@ -1,0 +1,14 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Name=Discord
+GenericName=Voice and Text Chat (web)
+Comment=All-in-one voice and text chat for gamers that's free and secure.
+Exec=bash -c '~/.local/bin/lpwa https://discord.com/app'
+Icon=discord
+Type=Application
+Terminal=false
+Categories=Network;InstantMessaging;
+StartupWMClass=discord-web
+X-GNOME-SingleWindow=true
+Keywords=Chat;Voice;Gaming;IRC;

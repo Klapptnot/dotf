@@ -1,7 +1,29 @@
 ---
 
 shell_env:
-  FZF_DEFAULT_COMMAND: fd --type file --follow --hidden --exclude .git
+  FZF_DEFAULT_COMMAND: >
+    fd --type file --follow --hidden
+    --exclude '.local/*/'
+    --exclude '.config/*/'
+    --exclude '.cursor/*/'
+    --exclude '.vscode/*/'
+    --exclude '.cargo/*/'
+    --exclude '.rustup/*/'
+    --exclude '.steam/*/'
+    --exclude .git
+    --exclude .android
+    --exclude .apklab
+    --exclude .cache
+    --exclude .erg
+    --exclude .gk
+    --exclude .gnupg
+    --exclude .gradle
+    --exclude .npm
+    --exclude .pki
+    --exclude .ssh
+    --exclude .var
+    --exclude .zen
+    --exclude .zoom
   LS_COLORS: $ vivid generate 'catppuccin-mocha'
   FZF_DEFAULT_OPTS: >
     --color=fg:#d0d0d0,bg:,hl:#7143e6

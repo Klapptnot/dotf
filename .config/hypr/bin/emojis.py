@@ -2,7 +2,6 @@
 
 import select
 import sys
-# import unicodedata
 
 try:
     from emoji import EMOJI_DATA
@@ -16,9 +15,8 @@ except ImportError:
 
 def list_emojis():
     for emoji, name in EMOJI_DATA.items():
-        # name = unicodedata.name(char)
         name = name["en"]
-        print(f"{emoji} {name}\r{name.upper()}")
+        print(f"{emoji} {name.lower()}\r{name}")
 
 
 def sanitize_emoji() -> str:

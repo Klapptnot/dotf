@@ -12,8 +12,7 @@ window {
   trasparency: "real";
   height: 30%;
   border: 2px;
-  border-color: @border;
-  border-radius: 20px;
+  border-radius: 8px;
   background-color: @trasparent;
   location: center;
 }
@@ -23,7 +22,25 @@ mainbox {
 }
 
 inputbar {
-  enabled: false;
+  enabled: true;
+}
+
+inputbar {
+  children: [entry];
+  background-color: @trasparent;
+  border-radius: 3px 3px 0px 0px;
+  border-color: @border;
+  border: 0px 0px 2px 0px;
+  padding: 12px 5px 8px 0px;
+}
+
+entry {
+  padding: 6px 16px 6px 16px;
+  text-color: @foreground;
+  border-radius: 5px;
+  border-color: @border;
+  background-color: @trasparent;
+  placeholder: " Type emoji name...";
 }
 
 listview {

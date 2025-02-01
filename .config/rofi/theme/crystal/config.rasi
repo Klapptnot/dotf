@@ -14,7 +14,7 @@ window {
   height: 45%;
   width: 35%;
   border: 2px;
-  border-radius: 20px;
+  border-radius: 8px;
   background-color: @background;
   location: center;
 }
