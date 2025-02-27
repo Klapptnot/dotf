@@ -10,6 +10,7 @@ source ~/.config/nushell/scripts/carapace.nu  # Completions helper
 
 alias vi = vim
 alias nano = vim
+alias lg = lazygit
 alias git = git --no-pager
 alias systemctl = systemctl --no-pager
 

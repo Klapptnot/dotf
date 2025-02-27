@@ -6,23 +6,22 @@
 # Simple, nice and customizable shell prompt
 
 def path-shorten []: string -> string {
-  let path_parts = ($in | split row (char path_sep))
-  let parts_count = ($path_parts | length) - 1
-  $path_parts | enumerate | each { |part|
-    if $part.index == $parts_count {
-        $part.item
-    } else if ($part.item | str starts-with ".") {
-        ($part.item | str substring 0..1)
-    } else {
-        ($part.item | str substring 0..0)
+  let path_parts = ($in | path split)
+
+  $path_parts | drop 1 | each { |part|
+    match $part {
+      "" => $part,
+      $s if ($s | str starts-with ".") => ($s | str substring 0..1),
+      $s => ($s | str substring 0..0)
     }
-  } | str join (char path_sep)
+  } | append ($path_parts | last) | path join
 }
 
 def get-path-fg-color []: string -> record<fg: string> {
   if ((which cksum).command?.0? == null) or $env.mirko.rdircolor != true {
     return $env.mirko.color.dir
   }
+
   let hex = (
     ($in | cksum | split row " ").0
     | awk '{printf "%x", $1}'

@@ -5,7 +5,6 @@ shell_env:
     fd --type file --follow --hidden
     --exclude '.local/*/'
     --exclude '.config/*/'
-    --exclude '.cursor/*/'
     --exclude '.vscode/*/'
     --exclude '.cargo/*/'
     --exclude '.rustup/*/'
@@ -30,7 +29,7 @@ shell_env:
     --color=fg+:#d0d0d0,bg+:#262626,hl+:#00f2ff
     --color=info:#afaf87,prompt:#d7005f,pointer:#af5fff
     --color=marker:#87ff00,spinner:#af5fff,header:#87afaf
-    --pointer '>' --marker '='
+    --wrap
 
 rofi:
   theme: crystal

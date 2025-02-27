@@ -1,0 +1,14 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Name=YT Music
+GenericName=Music streaming service (web)
+Comment=Music streaming service.
+Exec=bash -c '~/.local/bin/lpwa https://music.youtube.com/'
+Icon=youtube-music
+Type=Application
+Terminal=false
+Categories=Network;Music;
+StartupWMClass=youtube-music-web
+X-GNOME-SingleWindow=true
+Keywords=Music;Songs;
