@@ -51,8 +51,8 @@ function main {
   cd "${MELOC}" || exit 1
 
   barg.parse "${@}" << BARG || {
-  #[progname="DOTF", subcmdr='true']
-  #[subcmds="install uninstall help backgrounds config version"]
+  #[progname="dotf", subcmdr='true']
+  #[subcmds="install uninstall help bgmgr config version"]
   #[extras='EXTRA_PARAMS']
   @install {
     h/help => "help"
@@ -62,15 +62,15 @@ function main {
   @install g/geoinf[str] => INSTALL_USER_GEOINFO
   @install n/no-pkgs[bool] => INSTALL_NO_PKGS
 
-  ! @backgrounds {
+  ! @bgmgr {
     h/help => "help"
     l/list => "list"
     g/get => "download"
     r/remove => "remove"
   } |> "list" => BGM_MODE
-  @backgrounds i/index[str] |> "${HOME}/.config/dotf/backgrounds.yaml" => BGM_INDEX_FILE
-  @backgrounds d/bgmdir[str] |> "${HOME}/.local/share/backgrounds" => BGM_MAIN_FOLDER
-  @backgrounds a/all[bool] => BGM_ALL_GROUPS
+  @bgmgr i/index[str] |> "${HOME}/.config/dotf/backgrounds.yaml" => BGM_INDEX_FILE
+  @bgmgr d/bgmdir[str] |> "${HOME}/.local/share/backgrounds" => BGM_MAIN_FOLDER
+  @bgmgr a/all[bool] => BGM_ALL_GROUPS
 
   f/force[bool] => FORCE_OPERATION
 BARG
@@ -79,6 +79,20 @@ BARG
   }
 
   ${FORCE_OPERATION} && log w "Any operation can be forced"
+
+  # Was barg.parse working as expected?
+  # declare -p BARG_SUBCOMMAND \
+  #   BGM_ALL_GROUPS \
+  #   BGM_INDEX_FILE \
+  #   BGM_MAIN_FOLDER \
+  #   BGM_MODE \
+  #   EXTRA_PARAMS \
+  #   EXTRA_PARAMS_COUNT \
+  #   FORCE_OPERATION \
+  #   INSTALL_MODE \
+  #   INSTALL_NO_PKGS \
+  #   INSTALL_USER_GEOINFO
+  # return
 
   ignore=()
   pacman_pkgs=()
@@ -110,7 +124,7 @@ BARG
       nvim "${MELOC}/.iconf.sh"
       ;;
     help) print_help_info "${EXTRA_PARAMS[@]}" ;;
-    backgrounds) backgrounds_manager ;;
+    bgmgr) backgrounds_manager ;;
     version)
       spinner.start "Gathering info from remote repo" &
       SPINNER_PID="${!}"
@@ -137,7 +151,7 @@ function print_help_info {
     '{f12}Usage{r}:\n'
     '  {f14}dotf{r} <{f2}subcommand{r}> [{f248}options{r}]\n\n'
     '  install     [{f248}options{r}]  Set up dotf for this user\n'
-    '  backgrounds [{f248}options{r}]  Manage backgrounds\n'
+    '  bgmgr       [{f248}options{r}]  Manage backgrounds\n'
     '  uninstall              Remove dotf setup\n'
     '  config                 Open the configuration file (neovim)\n'
     '  help                   Show this message and exit\n'
@@ -165,10 +179,10 @@ function print_help_info {
     '  Run `''dotf install -n` to update linked files after manual package additions.\n'
     '  Use `''-f` to force linking, replacing existing files with links in the config path.'
   )
-  local help_backgrounds=(
-    '{f12}dotf{r} {f2}backgrounds{r}: Manage backgrounds\n\n'
+  local help_bgmgr=(
+    '{f12}dotf{r} {f2}bgmgr{r}: Manage backgrounds\n\n'
     '{f12}Usage{r}:\n'
-    '  {f14}dotf{r} {f2}backgrounds{r} [{f248}options{r}]\n\n'
+    '  {f14}dotf{r} {f2}bgmgr{r} [{f248}options{r}]\n\n'
     '{f12}Options{r}:\n'
     '  -h, --help              Show this message and exit\n'
     '  -l, --list              List groups available\n'
@@ -186,8 +200,8 @@ function print_help_info {
       IFS= help_message="${help_install[*]}"
       printfc "${help_message}"
       ;;
-    backgrounds)
-      IFS= help_message="${help_backgrounds[*]}"
+    bgmgr)
+      IFS= help_message="${help_bgmgr[*]}"
       printfc "${help_message}"
       ;;
     *)

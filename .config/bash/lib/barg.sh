@@ -2,6 +2,9 @@
 
 # Barg - Bash ARGuments parser
 # ============================
+#
+# BETA - Functional but with known limitations:
+# - Logical operators (|| &&) follow bash (ambiguous) behavior
 
 # Check if this script is being executed as the main script
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
@@ -331,7 +334,7 @@ function barg.parse {
     local error_type="${1:-null}"
     local error_desc="${2:-null}"
 
-    local __err__="${ecolor}ERROR: ${progname} -> ${error_type}...\x1b[00m ${error_desc}."
+    local __err__="${ecolor}ERROR: ${progname} -> ${error_type}...\x1b[00m ${error_desc}"
 
     if [ "${output}" == 'true' ]; then
       [ "${stderr}" == 'true' ] && printf '%b\n' "${__err__}" >&2 ||
@@ -430,8 +433,8 @@ function barg.parse {
   # Try to get the possible sub command
   if [ -n "${__barg_opts__[subcmds]}" ]; then
     # shellcheck disable=SC2206
-    local subcommands=(${__barg_opts__[subcmds]})
-    if barg.is_in_arr "${argv[0]}" "${subcommands[@]/#\*/}"; then
+    local subcmds=(${__barg_opts__[subcmds]})
+    if barg.is_in_arr "${argv[0]}" "${subcmds[@]/#\*/}"; then
       # check if it does not need extras
       [[ " ${__barg_opts__[subcmds]} " == *" *${argv[0]} "* ]] && BARG_SUBCOMMAND_NEEDS_EXTRAS=true
       BARG_SUBCOMMAND="${argv[0]}"
@@ -440,9 +443,17 @@ function barg.parse {
   fi
   if [ "${__barg_opts__[subcmdr]}" == "true" ] && [ -n "${__barg_opts__[subcmds]}" ] && [ -z "${BARG_SUBCOMMAND}" ]; then
     # shellcheck disable=SC2206
-    local subcommands=(${__barg_opts__[subcmds]})
-    : "${subcommands[*]/#\*/}" && : "${_//\ /,\ }"
-    barg.exit "Missing subcommand" "A subcommand is required, one of ${_% *} or ${_##* }" 21
+    local subcmds=(${__barg_opts__[subcmds]})
+    subcmds=("${subcmds[@]/#\*/}")
+    local subcommands_l="${#subcmds[@]}"
+    if ((subcommands_l > 3)); then
+      printf -v subcmds '\n  - \x1b[38;5;4m%s\x1b[0m' "${subcmds[@]}"
+    else
+      printf -v subcmds \
+        ' \x1b[38;5;4m%s\x1b[0m, \x1b[38;5;4m%s\x1b[0m, or \x1b[38;5;4m%s\x1b[0m' \
+        "${subcmds[0]}" "${subcmds[1]}" "${subcmds[2]}"
+    fi
+    barg.exit "Missing subcommand" "A subcommand is required, one of:${subcmds}" 21
   fi
   # remove to not add it to extras
   [ "${argv[0]}" == '--' ] && argv=("${argv[@]:1}")
@@ -508,7 +519,7 @@ function barg.parse {
     local var_name="${BASH_REMATCH[27]}"                     # |-> Variable name
     # local def_desc="${BASH_REMATCH[30]:-${BASH_REMATCH[32]}}" # ?-> Def description
 
-    [[ -n "${log_opr}" || -n "${subcmd_prop}" ]] && arg_par="@${subcmd_prop}"
+    [[ -n "${log_opr}" && -n "${subcmd_prop}" ]] && arg_par="@${subcmd_prop}"
     [[ -n "${log_opr}" && "${__required__}" == 'true' ]] && arg_lvl='!'
 
     # If it's only `@`, the param is for the use without subcommand
