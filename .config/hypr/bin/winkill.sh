@@ -12,50 +12,89 @@
 # So, this closes windows and processes
 
 function main {
-  local opr="${1}"
-  shift 1
+  # Set IFS to split on hyphen, dot, or space
+  IFS='-. _' read -r what who <<< "${*}"
 
-  if [[ ! "${opr}" =~ ^(kill|close)(-|\.)(current|others)$ ]]; then
-    printf '\x1b[31mThe command "%s" is not a know operation\x1b[0m\n' "${opr}"
-    exit
+  if check_swap "${what}" "${who:=none}"; then
+    local tmp="${what}"
+    what="${who}"
+    who="${tmp}"
+  fi
+  unset tmp
+
+  if ! check_args "${what}" "${who}"; then
+    handle_incorrect_args "${what:-none}" "${who:-none}"
   fi
 
-  "${BASH_REMATCH[1]}.${BASH_REMATCH[3]}"
+  case "${what}" in
+    'kill') kill_windows "${who}" ;;
+    'close') close_windows "${who}" ;;
+  esac
 }
 
-function close.others {
-  while read -r window; do
-    hyprctl dispatch closewindow "${window}"
-  done < <(
-    jq -rM --null-input \
-      --argjson c "$(hyprctl clients -j)" \
-      --argjson w "$(hyprctl activeworkspace -j)" \
-      '$c[] | select(.workspace.id == $w.id) | select(.focusHistoryID != 0) | "address:" + .address'
-  )
+function check_swap {
+  case "${1}" in
+    "current" | "others") return 0 ;;
+  esac
+  case "${2}" in
+    "kill" | "close") return 0 ;;
+  esac
+  return 1
 }
 
-function kill.others {
+function check_args {
+  case "${1}" in
+    "kill" | "close");;
+    *) return 1 ;;
+  esac
+  case "${2}" in
+    "current" | "others");;
+    *) return 1 ;;
+  esac
+}
+
+function handle_incorrect_args {
+  local msg=''
+
+  if [[ "${1}|${2}" == 'none|none' ]]; then
+    msg='Missing arguments for operation'
+  elif [[ "${1}" == 'none' ]]; then
+    msg="Missing operation: ${1}"
+  elif [[ "${2}" == 'none' ]]; then
+    msg="Missing argument for operation: ${1}"
+  elif [[ "${1}" != 'kill' && "${1}" != 'close' ]]; then
+    msg="Invalid operation: ${1}"
+  elif [[ "${2}" != 'current' && "${2}" != 'others' ]]; then
+    msg="Invalid target: ${2}"
+  fi
+
+  if [[ -n "${msg}" ]]; then
+    printf '\x1b[31m%s\x1b[0m\n' "${msg}" >&2
+    printf 'Usage: winkill [kill|close] [current|others]\n'
+    exit 1
+  fi
+}
+
+function close_windows {
+  local opr='!='
+  [[ "${1}" == 'current' ]] && opr='=='
+
   jq -rM --null-input \
     --argjson c "$(hyprctl clients -j)" \
     --argjson w "$(hyprctl activeworkspace -j)" \
-    '$c[] | select(.workspace.id == $w.id) | select(.focusHistoryID != 0) | .pid' |
-    xargs kill
+    '$c[] | select(.workspace.id == $w.id) | select(.focusHistoryID '"${opr}"' 0) | "address:" + .address' |
+    xargs --no-run-if-empty --max-args 1 hyprctl dispatch closewindow
 }
 
-function close.current {
-  jq --null-input \
-    --argjson c "$(hyprctl clients -j)" \
-    --argjson w "$(hyprctl activeworkspace -j)" \
-    '$c[] | select(.workspace.id == $w.id) | select(.focusHistoryID == 0) | "address:" + .address' |
-    xargs hyprctl dispatch closewindow
-}
+function kill_windows {
+  local opr='!='
+  [[ "${1}" == 'current' ]] && opr='=='
 
-function kill.current {
-  jq --null-input \
+  jq -rM --null-input \
     --argjson c "$(hyprctl clients -j)" \
     --argjson w "$(hyprctl activeworkspace -j)" \
-    '$c[] | select(.workspace.id == $w.id) | select(.focusHistoryID == 0) | .pid' |
-    xargs kill
+    '$c[] | select(.workspace.id == $w.id) | select(.focusHistoryID '"${opr}"' 0) | .pid' |
+    xargs --no-run-if-empty kill
 }
 
 main "${@}"

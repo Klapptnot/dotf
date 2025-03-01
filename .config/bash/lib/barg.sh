@@ -22,7 +22,7 @@ fi
 # ```bash
 #   barg.parse "${argv[@]}" <<EOF
 #     #[progname='Example']
-#     #[subcmds='=help =tell echo', subcmdr='true']
+#     #[subcmds='help tell *echo', subcmdr='true']
 #     #[reqextras='true', extras='PARAMS']
 #
 #     @help a/all[bool] => HELP_SHOW_ALL
@@ -508,8 +508,8 @@ function barg.parse {
     local var_name="${BASH_REMATCH[27]}"                     # |-> Variable name
     # local def_desc="${BASH_REMATCH[30]:-${BASH_REMATCH[32]}}" # ?-> Def description
 
-    [ -n "${log_opr}" ] && [ -n "${subcmd_prop}" ] && arg_par="@${subcmd_prop}"
-    [ -n "${log_opr}" ] && ${__required__} && arg_lvl='!'
+    [[ -n "${log_opr}" || -n "${subcmd_prop}" ]] && arg_par="@${subcmd_prop}"
+    [[ -n "${log_opr}" && "${__required__}" == 'true' ]] && arg_lvl='!'
 
     # If it's only `@`, the param is for the use without subcommand
     ((${#BARG_SUBCOMMAND} > 0)) && ((${#arg_par} == 1)) && continue
