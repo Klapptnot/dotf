@@ -1,2 +1,0 @@
-#!/usr/bin/bash
-exec uwsm app -- "${@}" &> /dev/null

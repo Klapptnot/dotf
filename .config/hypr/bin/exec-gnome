@@ -1,2 +1,0 @@
-#!/usr/bin/bash
-XDG_CURRENT_DESKTOP=GNOME XDG_SESSION_DESKTOP=gnome exec "${@}" &> /dev/null

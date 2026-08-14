@@ -2,32 +2,36 @@
 # 🔗 https://github.com/klapptnot/dotf
 
 function battery_data_get {
-  local key="${1}"
+  local key="${2}"
   case "${key}" in
     'icon_name')
       [ "${POWER_SUPPLY_STATUS}" == "Charging" ] && local icon="-charging"
-      printf 'battery-%03d%s' "$(((POWER_SUPPLY_CAPACITY / 10) * 10))" "${icon}"
+      printf -v "${1}" 'battery-%03d%s' "$(((POWER_SUPPLY_CAPACITY / 10) * 10))" "${icon}"
       ;;
     'icon')
       [ "${POWER_SUPPLY_STATUS}" == "Charging" ] && printf '' && return
-      ((POWER_SUPPLY_CAPACITY > 90)) && printf '󰁹' && return
-      ((POWER_SUPPLY_CAPACITY > 80)) && printf '󰂂' && return
-      ((POWER_SUPPLY_CAPACITY > 70)) && printf '󰂁' && return
-      ((POWER_SUPPLY_CAPACITY > 60)) && printf '󰂀' && return
-      ((POWER_SUPPLY_CAPACITY > 50)) && printf '󰁿' && return
-      ((POWER_SUPPLY_CAPACITY > 40)) && printf '󰁾' && return
-      ((POWER_SUPPLY_CAPACITY > 30)) && printf '󰁽' && return
-      ((POWER_SUPPLY_CAPACITY > 20)) && printf '󰁼' && return
-      ((POWER_SUPPLY_CAPACITY > 10)) && printf '󰁻' && return
-      ((POWER_SUPPLY_CAPACITY > 00)) && printf '󰁺' && return
+      case "$((POWER_SUPPLY_CAPACITY - (POWER_SUPPLY_CAPACITY % 10)))" in
+      100) printf -v "${1}" '󰁹' ;;
+      90)  printf -v "${1}" '󰂂' ;;
+      80)  printf -v "${1}" '󰂁' ;;
+      70)  printf -v "${1}" '󰂀' ;;
+      60)  printf -v "${1}" '󰁿' ;;
+      50)  printf -v "${1}" '󰁾' ;;
+      40)  printf -v "${1}" '󰁽' ;;
+      30)  printf -v "${1}" '󰁼' ;;
+      20)  printf -v "${1}" '󰁻' ;;
+      10)  printf -v "${1}" '󰁺' ;;
+      0)   printf -v "${1}" '󰂎' ;;
+      esac
       ;;
     *)
-      local power_supply_key="POWER_SUPPLY_${key^^}"
+      local power_supply_key="${key^^}"
       if [ -z "${!power_supply_key@A}" ]; then
         printf 'Unknown key: %s\n' "${key^^}" >&2
+        printf -v "${1}" ''
         return
       fi
-      printf '%s' "${!power_supply_key}"
+      printf -v "${1}" '%s' "${!power_supply_key}"
       ;;
   esac
 }
@@ -36,11 +40,14 @@ function main {
   local format_it='\{([a-z_]+)\}'
   local what="${1:-"{icon} {capacity}% {status}"}"
   local battery_file=(/sys/class/power_supply/BAT*/uevent)
-  # shellcheck disable=SC1090
-  source <(cat "${battery_file[0]}")
+  local -A batt_fields=()
+  while IFS='=' read -r k v; do
+    batt_fields["${k#POWER_SUPPLY_}"]="${v}"
+  done < "${battery_file[0]:?no battery file found}"
 
+  local res=''
   while [[ "${what}" =~ ${format_it} ]]; do
-    IFS=$'\n' read -r res < <(battery_data_get "${BASH_REMATCH[1]}")
+    battery_data_get res "${BASH_REMATCH[1]}"
     what="${what//"${BASH_REMATCH[0]}"/"${res}"}"
   done
 

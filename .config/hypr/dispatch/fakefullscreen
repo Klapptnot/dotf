@@ -1,7 +1,0 @@
-#!/usr/bin/bash
-# Toggle client fullscreen while keeping it as tile/fullscreen
-# 🔗 https://github.com/klapptnot/dotf
-
-hyprctl -j activewindow | jq -rM \
-  'if .fullscreenClient == 2 then "\(.fullscreen)\n0" else "\(.fullscreen)\n2" end' \
-  | xargs --no-run-if-empty --max-args 2 hyprctl dispatch fullscreenstate

@@ -4,5 +4,5 @@ read -r USER_ID < <(id -u)
 mapfile -t SESSION_ID < <(loginctl list-sessions --no-legend | awk '$7 ~ /^tty/ && $2 == '"${USER_ID}"' {print $1}')
 
 [[ -z "${SESSION_ID[0]}" ]] && exit 1
-loginctl terminate-session "${SESSION_ID[0]}"
+loginctl kill-session "${SESSION_ID[0]}"
 
