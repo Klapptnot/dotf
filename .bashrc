@@ -1,91 +1,48 @@
-# shellcheck disable=SC2148,SC1090,SC1091,SC2120
-# If not running interactively, don't do anything
+# ~/.bashrc
 [[ "${-}" != *i* ]] && return
 
-# See bash(1) for more options
-HISTCONTROL=ignoreboth:erasedups                                                     # Remove duplicates in history, ignore commands starting with space
-HISTIGNORE='&:ls:[bf]g:exit:history:cd:cd -:cd ..:cd ~:pwd:rm *:sudo rm*:git clone*' # Ignore these commands in history
-HISTTIMEFORMAT='%F %T'                                                               # Add timestamp to history entries
-HISTSIZE=1000                                                                        # Number of commands to keep in history
-HISTFILESIZE=2000                                                                    # Number of lines to keep in history file
+function source {
+  builtin source "${@}" || exit "${?}"
+}
 
-shopt -s histappend         # Add new history entries by appending to history file
-shopt -s histverify         # When using Ctrl+R, allow editing command before execution
-shopt -s histreedit         # Allow editing of failed commands in history
-shopt -s failglob           # Report error when glob patterns don't match any files
-shopt -s autocd             # Change directory automatically if command name matches directory
-shopt -s cdspell            # Auto-correct minor spelling errors in cd commands
-shopt -s dirspell           # Enable spelling correction during directory name completion
-shopt -s dotglob            # Include hidden files (dotfiles) in pathname expansion
-shopt -s extglob            # Enable extended pattern matching operators
-shopt -s globstar           # Enable ** for recursive directory matching
-shopt -s patsub_replacement # Enable & to reference matched text in pattern substitution
+HISTCONTROL='erasedups' #:ignoreboth'
+HISTIGNORE='&:ls:cd:pwd:rm*:sudo rm*:git clone*'
+HISTSIZE=1000
+HISTFILESIZE=2000
+shopt -s gnu_errfmt histappend histverify histreedit \
+  failglob autocd cdspell dirspell checkwinsize \
+  dotglob extglob globstar patsub_replacement \
 
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
-shopt -s checkwinsize
+source ~/.config/bash/functions.sh
+source ~/.config/bash/bettercd.sh
+source ~/.config/bash/carapace.sh
+source ~/.config/bash/bargcomp.sh
+[[ -r ~/.cargo/env ]] && source ~/.cargo/env
+[[ -r ~/.config/dotf/set-env-lines.sh ]] && source ~/.config/dotf/set-env-lines.sh
 
-PS1='[\u@\h \W]\$ '
-
-# Define array of source files with comments
-BASHRC_SOURCED=(
-  ~/.cargo/env                               # In case of rustup
-  ~/.bash_aliases                            # Load aliases
-  ~/.config/bash/goto.sh                     # Add cd helper
-  ~/.config/bash/mirkop.sh                   # Change prompt
-  ~/.config/bash/functions.sh                # Load util functions
-  ~/.config/bash/carapace.sh                 # Load carapace completion
-  ~/.config/bash/bargcomp.sh                 # Load barg completion
-  /usr/share/bash-completion/bash_completion # Load bash completion
-)
-
-# Source each file if it exists
-for file in "${BASHRC_SOURCED[@]}"; do
-  if [ -f "${file}" ]; then
-    if ! source "${file}" &>/dev/null; then
-      printf '~''/.bashrc:%s Failed to source %s\n' "${LINENO}" "${file}" >&2
-    fi
-  fi
-done
-
-alias gt='goto'
-alias git='git --no-pager'
+alias lg='lazygit'
 alias ls='ls --color=yes'
-
-if ! command -v clear &>/dev/null; then
-  # The sequence is ESC [ H ESC [ 2 J with -x
-  # ESC [ 0 H ESC [ 3 J to clear scrollback buffer
-  function clear {
-    if [[ "${*}" = '-'*'x'* ]]; then
-      printf '\x1b[0H\x1b[2J'
-      return
-    fi
-    printf '\x1b[0H\x1b[3J'
-  }
-fi
+alias wdc='windscribe-cli'
+alias git='git --no-pager'
+alias nano='vim'
 
 bind -x '"\C-l": clear'
-bind -x '"\C-o": __fzf_nvim_open_file'
-bind -x '"\C-u": __fzf_cat_file'
+bind -x '"\C-o": --nvim-open-files-fuzzy'
 
-source ~/.config/bash/yq.sh
-declare -Ag root
-yq.sh ~/.config/dotf/props.yaml root
-unset -f yq.sh
+printf -v PAD28 '%28s'
+PS4='# \[\e[0m\e[38;2;168;230;179m\][${#FUNCNAME[@]}][${FUNCNAME:-?}${PAD28:${#FUNCNAME}}]\[\e[0m\] '
+: "$((UID == 0 ? 342234246 : 342211273))"
+: "${_//???/\\&}"
+PS1='\[\e[38;5;50m\]\u\[\e[0m\] in \[\e[38;5;141m\]\h\[\e[0m\] \[\e[38;5;243m\]${ pwd-truncated;}\[\e[0m\]'"${_@P} "
 
-for key in ${!root[@]}; do
-  [[ ${key} == .shell_environment.* ]] || continue
+if [[ -r ~/.local/mirkop.sh && ~/.config/mirkop.yaml -nt ~/.cache/mirkop-prompt.sh ]]; then
+  printf 'Regenerating prompt...\n'
+  bash ~/.local/mirkop.sh ~/.config/mirkop.yaml ~/.cache/mirkop-prompt.sh
+fi
 
-  value="${root[${key}]}"
-  key="${key#.shell_environment.}"
+if [[ -r ~/.cache/mirkop-prompt.sh ]]; then
+  source ~/.cache/mirkop-prompt.sh
+  PROMPT_COMMAND=('mirkop-init')
+fi
 
-  if [[ "${value}" == '$ '* ]]; then
-    export "${key}=$(eval "${value:2}")"
-  else
-    export "${key}=${value}"
-  fi
-done
-unset -v key value root
-
-# if not login shell ignore the rest
 ! shopt -q login_shell && return

@@ -1,7 +1,5 @@
 CompileFlags:
   Add:
-    - -std=c23
-    - -xc
     - -Wall
     - -Wextra
     - -Wpedantic
@@ -49,5 +47,5 @@ Diagnostics:
       - readability-braces-around-statements
       - misc-no-recursion
       - readability-identifier-length
-  UnusedIncludes: Strict
-  MissingIncludes: Strict
+  # UnusedIncludes: Strict
+  # MissingIncludes: Strict

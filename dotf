@@ -1,16 +1,16 @@
 #!/usr/bin/bash
 # shellcheck disable=SC1091
 
-include barg.sh
-include logger.sh
-include spinner.sh
+source barg.sh
+source logger.sh
+source spinner.sh
 
 function confirm_or_exit {
   printf '%b' "${1}"
   read -r -n 1 REPLY
   echo
   if ! [[ "${REPLY}" =~ ^(Y|y)$ ]]; then
-    log i "Cancelled by user"
+    log::info "Cancelled by user"
     exit
   fi
 }
@@ -26,7 +26,7 @@ function run_or_exit {
 function update_sources {
   cd "${MELOC}" || exit
   if ! git_version_gen > /dev/null; then
-    log i "Already up to date"
+    log::info "Already up to date"
     return
   fi
 
@@ -35,7 +35,7 @@ function update_sources {
   run_or_exit git restore "${MELOC}"
   run_or_exit git pull --rebase
 
-  log i "Successfully pulled new changes"
+  log::info "Successfully pulled new changes"
 
   spinner.stop
 
@@ -45,11 +45,11 @@ function update_sources {
 
 function install_packages {
   if ! ${DOTF_INSTALL_PKGS}; then
-    log i "User rejected packages installation"
+    log::info "User rejected packages installation"
     return
   fi
 
-  log i 'Spinner not enabled to allow sudo prompts'
+  log::info 'Spinner not enabled to allow sudo prompts'
   if [ -z "${TERMUX_APP__PACKAGE_NAME@A}" ]; then
     sudo pacman -Syy --noconfirm --needed "${pacman_pkgs[@]}"
 
@@ -59,7 +59,7 @@ function install_packages {
       local yay_folder
 
       read -r yay_folder < <(mktemp --directory) || {
-        log e 'Could not create temporary folder'
+        log::err 'Could not create temporary folder'
         exit 1
       }
       run_or_exit git clone https://aur.archlinux.org/yay.git "${yay_folder}"
@@ -77,22 +77,22 @@ function install_packages {
 
 function __bgm_validate_environment {
   if ! command -v yq &> /dev/null; then
-    log e 'Command yq is required, install it first (go version)'
+    log::err 'Command yq is required, install it first (go version)'
     return 1
   fi
 
   if [ ! -d "${DOTF_BGM_ROOT_FOLDER}" ]; then
-    log e 'Backgrounds folder does not exist or is inaccessible (must be absolute path)'
+    log::err 'Backgrounds folder does not exist or is inaccessible (must be absolute path)'
     return 1
   fi
 
   if [ ! -f "${DOTF_BGM_INDEX_FILE}" ]; then
-    log e 'Index file does not exist or is inaccessible'
+    log::err 'Index file does not exist or is inaccessible'
     return 1
   fi
 
   if [[ "${DOTF_BGM_ALL_GROUPS}" != 'true' ]] && ((DOTF_SPARE_ARGS_COUNT < 1)); then
-    log e 'Pass group names as arguments, or pass the --all flag'
+    log::err 'Pass group names as arguments, or pass the --all flag'
     return 1
   fi
 
@@ -111,7 +111,7 @@ function __bgm_validate_groups {
   if ! ${DOTF_BGM_ALL_GROUPS}; then
     for ((i = 0; i < DOTF_SPARE_ARGS_COUNT; i++)); do
       if ! barg::is_in_arr "${DOTF_SPARE_ARGS[i]}" "${groups_ref[@]}"; then
-        log e 'The group "%s" does not exist' "${DOTF_SPARE_ARGS[i]}"
+        log::err 'The group "%s" does not exist' "${DOTF_SPARE_ARGS[i]}"
       fi
     done
   fi
@@ -180,7 +180,7 @@ function bgm_download_backgrounds {
         continue
       fi
       if ${DOTF_FORCE_OPERATION}; then
-        log i 'File found, removing %s' "${it_name[i]}"
+        log::info 'File found, removing %s' "${it_name[i]}"
         rm "${DOTF_BGM_ROOT_FOLDER:?}/${it_name[i]}" || continue
         missing+=("${i}")
       fi
@@ -217,12 +217,12 @@ function bgm_download_backgrounds {
 
       # Start download in background
       {
-        log d 'Downloading %s...' "${it_name[index]}"
+        log::debug 'Downloading %s...' "${it_name[index]}"
         if wget -O "${DOTF_BGM_ROOT_FOLDER}/${it_name[index]}" "${it_link[index]}" &> /dev/null; then
-          log d 'Downloaded successfully %s' "${it_name[index]}"
+          log::debug 'Downloaded successfully %s' "${it_name[index]}"
           touch "${temp_dir}/${BASHPID}"
         else
-          log e 'Failed to download %s' "${it_link[index]}"
+          log::err 'Failed to download %s' "${it_link[index]}"
         fi
       } &
 
@@ -247,9 +247,9 @@ function bgm_download_backgrounds {
 
   for grp in "${!g_total[@]}"; do
     if [[ "${g_total["${grp}"]}" == '0' ]]; then
-      log i 'Group %s was already fully downloaded' "${grp}"
+      log::info 'Group %s was already fully downloaded' "${grp}"
     else
-      log i 'Group %s: %s downloaded' "${grp}" "${g_total["${grp}"]}"
+      log::info 'Group %s: %s downloaded' "${grp}" "${g_total["${grp}"]}"
     fi
   done
 }
@@ -269,36 +269,14 @@ function bgm_remove_backgrounds {
 
     for ((i = 0; i < item_count; i++)); do
       if [ -e "${DOTF_BGM_ROOT_FOLDER}/${it_name[i]}" ]; then
-        log d 'Removing %s' "${it_name[i]}"
+        log::debug 'Removing %s' "${it_name[i]}"
         rm -f "${DOTF_BGM_ROOT_FOLDER:?}/${it_name[i]}" || continue
         ((total_rmed++))
       fi
     done
   done
 
-  log i "Removed %d files" "${total_rmed}"
-}
-
-function de::dispatch {
-  local -r name="${1:-}"
-  local -r script="${HOME}/.config/hypr/dispatch/${name}"
-
-  if [[ "${DOTF_DISPATCH_LIST:-false}" == 'true' ]]; then
-    mapfile -t scripts < <(find "${HOME}/.config/hypr/dispatch" -maxdepth 1 ! -type d -executable)
-    for s in "${scripts[@]}"; do
-      local desc=''
-      read -r desc < <(tail -n +2 "${s}")
-      printf '%-20s  %s\n' "${s##*/}" "${desc##'# '}"
-    done
-    return 0
-  fi
-
-  [[ -n "${name}" ]] || { log e 'dispatch: no script name given'; return 1; }
-  [[ -f "${script}" ]] || { log e 'dispatch: script not found: %s' "${name}"; return 1; }
-  [[ -x "${script}" ]] || { log e 'dispatch: script not executable: %s' "${name}"; return 1; }
-
-  shift
-  exec "${script}" "${@}"
+  log::info "Removed %d files" "${total_rmed}"
 }
 
 # shellcheck disable=SC2155
@@ -324,7 +302,7 @@ function main {
   readonly MENAME="${MEPATH##*/}"
 
   [[ "${MELOC}/dotf" != "${MEPATH}" || ! -e "${MELOC}/dotf" ]] && {
-    log e 'Run this script as a file: assert (%q/dotf == %q)' "${MELOC}" "${MEPATH}"
+    log::err 'Run this script as a file: assert (%q/dotf == %q)' "${MELOC}" "${MEPATH}"
     return 1
   }
 
@@ -354,7 +332,6 @@ function main {
   commands {
     setup: 'Set all configs ready'
     remove: 'Remove added configs'
-    *dispatch: 'Dispatch functions to DE'
     *walls: 'Manage background collections'
     config: 'Configure dotfiles settings'
     version: 'Show version information'
@@ -362,7 +339,7 @@ function main {
 
   f/force :flag => DOTF_FORCE_OPERATION "Force any required operation"
 
-  @setup {
+  @setup "kind" {
     r/reset: "reset"
     u/update: "update"
   } "normal" => DOTF_INSTALL_MODE "Installation mode (normal, reset, update)"
@@ -375,9 +352,8 @@ function main {
 
   @remove S/simulate :flag => DOTF_SIMULATION_MODE "Simulate rather than making any change"
   @remove v/verbose :int 4 => DOTF_STOW_LOG_LVL "Forward log level to bstow, from 0 to 5"
-  @dispatch l/list :flag => DOTF_DISPATCH_LIST "List available dispatchers"
 
-  @walls ! "work-mode" {
+  @walls ! "mode" {
     l/list: "list" h"List in-device backgrounds"
     g/get: "download" h"Download selected groups"
     r/remove: "remove" h"Remove selected wallpapers"
@@ -390,15 +366,13 @@ BARG
 
   # barg::unload
 
-  [[ "${BARG_SUBCOMMAND}" == 'dispatch' ]] && de::dispatch "${DOTF_SPARE_ARGS[@]}"
-
-  ${DOTF_FORCE_OPERATION} && log w "Any operation can be forced"
+  ${DOTF_FORCE_OPERATION} && log::warn "Any operation can be forced"
 
   declare -g pacman_pkgs=()
   declare -g yay_pkgs=()
 
   [ ! -e "${MELOC}/.iconf.sh" ] && {
-    log e 'Config file missing -> %s' "${MELOC}/.iconf.sh"
+    log::err 'Config file missing -> %s' "${MELOC}/.iconf.sh"
     return 1
   }
 
@@ -428,21 +402,21 @@ BARG
         reset)
           confirm_or_exit '\x1b[38;5;87mAll local changes will be discarded, continue anyways?\x1b[0m [Yn]: '
           git reset "${MELOC}"
+          bstow_args+=(--restow)
           ;;
         update)
           confirm_or_exit '\x1b[38;5;87mAll local changes will be discarded, continue anyways?\x1b[0m [Yn]: '
           update_sources
           bstow_args+=(--restow)
-          ;;&
+          ;;
         normal)
           bstow_args+=(--stow)
-          ;;&
-        *)
-          bstow "${bstow_args[@]}"
-          install_packages
-          post_install
           ;;
       esac
+
+      bstow "${bstow_args[@]}"
+      install_packages
+      post_install
       ${DOTF_RELOAD_WM} && hyprctl reload &> /dev/null
       ;;
     remove)
@@ -451,7 +425,7 @@ BARG
       ;;
     config)
       if ! command -v nvim &> /dev/null; then
-        log e "Neovim not installed or not in PATH"
+        log::err "Neovim not installed or not in PATH"
         exit
       fi
       nvim "${MELOC}/.iconf.sh"
@@ -465,9 +439,9 @@ BARG
       } < <(git_version_gen)
       spinner.stop
 
-      log i 'klapptnot/dotf %s' "${local_version}"
+      log::info 'klapptnot/dotf %s' "${local_version}"
       if ((new_commits > 0)); then
-        log i '\nUpdates available (%s), to update run `''%s setup --update`' "${remote_version}" "${MENAME}"
+        log::info '\nUpdates available (%s), to update run `''%s setup --update`' "${remote_version}" "${MENAME}"
       fi
       ;;
   esac

@@ -5,7 +5,7 @@ def --env set-env [name: string, value: any] { load-env { $name: $value } }
 # remove env var :cmpsrc.nu
 def --env unset-env [name: string] { hide-env $name }
 
-let __compsrc_exec: list<string> = (if ('~/.config/.bargcomp.json' | path exists) { open ~/.config/.bargcomp.json } else { [] })
+let __compsrc_exec: list<string> = (if ('~/.config/.bargcomp.yaml' | path exists) { open ~/.config/.bargcomp.yaml } else { [] })
 $env.config.completions.external = {
   enable: true
   max_results: ($env.config | get --optional completions.external.max_results | default 2)

@@ -207,11 +207,6 @@ let theme = {
     cursor: $stheme.blue
 }
 
-# External completer example
-# let carapace_completer = {|spans|
-#     carapace $spans.0 nushell ...$spans | from json
-# }
-
 # The default config record. This is where much of your global configuration is setup.
 $env.config = {
     show_banner: false # true or false to enable or disable the welcome banner at startup

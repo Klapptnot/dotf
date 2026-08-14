@@ -1,32 +1,29 @@
-/* Catppuccin Mocha Theme */
 :root {
-  --rosewater: #f5e0dc;
-  --flamingo: #f2cdcd;
-  --pink: #f5c2e7;
-  --mauve: #cba6f7;
-  --red: #f38ba8;
-  --maroon: #eba0ac;
-  --peach: #fab387;
-  --yellow: #f9e2af;
-  --green: #a6e3a1;
-  --teal: #94e2d5;
-  --sky: #89dceb;
-  --sapphire: #74c7ec;
-  --blue: #89b4fa;
-  --lavender: #b4befe;
-  --text: #cdd6f4;
-  --subtext1: #bac2de;
-  --subtext0: #a6adc8;
-  --overlay2: #9399b2;
-  --overlay1: #7f849c;
-  --overlay0: #6c7086;
-  --surface2: #585b70;
-  --surface1: #45475a;
-  --surface0: #313244;
-  --base: #1e1e2e;
-  --mantle: #181825;
-  --crust: #11111b;
+  --color-background: #1a1112;
+  --color-on-background: #f0dedf;
 
-  --accent: var(--mauve);
-  --ground: var(--lavender);
+  --color-surface: #1a1112;
+  --color-surface-low: #22191a;
+  --color-surface-variant: #524344;
+  --color-on-surface-variant: #d7c1c2;
+
+  --color-primary: #ffb2b8;
+  --color-on-primary: #561d24;
+  --color-primary-container: #72333a;
+
+  --color-secondary: #e6bdbe;
+  --color-on-secondary: #44292b;
+
+  --color-tertiary: #e7c08e;
+  --color-on-tertiary: #432c06;
+  --color-tertiary-container: #5d421b;
+  --color-on-tertiary-container: #ffddb4;
+
+  --color-outline: #9f8c8d;
+  --color-outline-variant: #9f8c8d;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+
+  --color-scrim: #000000;
 }

@@ -1,157 +1,159 @@
-# 🔗 https://github.com/klapptnot/dotf
+# $format | str replace --all --regex '\{(\{?[^}]*\}?)\}' fill-fields
 
-# Simple, nice and customizable shell prompt
-
-# Get a short version of input path
-def path-shorten []: string -> string {
-  let path_parts = ($in | path split)
-
-  $path_parts | drop 1 | each { |part|
-    match $part {
-      "" => $part,
-      $s if ($s | str starts-with ".") => ($s | str substring 0..1),
-      $s => ($s | str substring 0..0)
-    }
-  } | append ($path_parts | last) | path join
+let mirko = do {
+  let mirko_path = ([$env.HOME, ".config", "mirkop.yaml"] | path join)
+  mut m = open $mirko_path
+  $m.styles = $m.styles | items {|k, v| {$k: (ansi $v)} } | into record
+  $m.reset = (ansi reset)
+  $m.locality = (if ($env.SSH_TTY? | default nothing) == nothing { 'local' } else { 'remote' })
+  $m
 }
 
-# git information/summary for right prompt use
-def get-git-info []: nothing -> record<added: int, inserted: int, deleted: int, untracked: int, folders: int, branch: string> {
-  let changes = (git diff --shortstat | complete | get stdout | parse --regex '\s*(?<f>[0-9]+)[^0-9]*(?<i>[0-9]+)[^0-9]*(?<d>[0-9]+)')
-  let untracked = (git ls-files --other --exclude-standard | lines)
-  let u_folders = ($untracked | path dirname | uniq | length)
-
-
-  # Create a record with the calculated values
-  {
-    added: ($changes | get f.0? | default 0 | into int),
-    inserted: ($changes | get i.0? | default 0 | into int),
-    deleted: ($changes | get d.0? | default 0 | into int),
-    untracked: ($untracked | length),
-    folders: $u_folders,
-    branch: (git branch --show-current)
-  }
+if not (($mirko.prompt | describe) starts-with 'record') {
+  return
 }
 
-def __left_prompt_command [--transient]: nothing -> string {
-  let dir = match (do --ignore-errors { $env.PWD | path relative-to $nu.home-dir }) {
-    null => $env.PWD
-    '' => '~'
-    $relative_pwd => ([~, $relative_pwd] | path join)
+let mirkop_field_filler = {|m|
+  if not (($mirko.modules | get --optional $m | describe) starts-with 'record') {
+    return ""
   }
 
-  if $env.mirkov.ldir != $dir {
-    $env.mirkov.ldir = $dir
-    $env.mirkov.sdir = ($dir | path-shorten)
-    $env.mirkov.cdir = ansi --escape { fg: $"#($dir | hash md5 | str substring ..5)" }
-  }
+  let module = $mirko.modules | get $m
+  let mkind = $module | get --optional kind | default "null"
 
-  if $transient {
-    return $"($env.mirkov.cdir)($env.mirkov.sdir)(ansi reset):"
-  }
-
-  [
-    $env.mirkov.cuser,
-    $env.mirko.str.user,
-    $env.mirkov.cfrom,
-    $env.mirko.str.from,
-    $env.mirkov.chost,
-    $env.mirko.str.host,
-    ' ',
-    $env.mirkov.cdir,
-    $env.mirkov.sdir,
-  ] | str join
-}
-
-def __right_prompt_command [--transient]: nothing -> string {
-  mut parts = []
-
-  if not $transient {
-    if ($env.LAST_EXIT_CODE != 0) {
-      $parts ++= [$env.mirkov.cerr, ($env.LAST_EXIT_CODE | into string), "? "]
+  let format = if $mkind != "at" and $mkind != "char" {
+    if not (($module | get --optional format | describe) == 'string') {
+      return ""
     }
 
-    if (git rev-parse --is-inside-work-tree | complete).exit_code == 0 {
-      let color = $env.mirko.color.git
-      let data = (get-git-info)
+    let mf = if $mkind == 'date' {
+      let mf = $module | get format
+      date now | format date $mf
+    } else if $mkind == 'at' {
+      $module | get $mirko.locality
+    } else { $module | get format }
 
-      if $env.mirko.collapse > (term size).columns {
-        $parts ++= [$color.a, $data.added, $color.s, "@", $color.a, $data.branch, $color.s, $env.mirkov.creset, " "]
-      } else {
-        $parts ++= [
-          $color.a, $data.added, $color.s, "@", $color.a, $data.branch, $color.s
-          " ", $color.i, "+", $data.inserted, $color.s, "/", $color.d, "-", $data.deleted, $color.a,
-          " (● ", $data.untracked, $color.s, "@", $color.a, $data.folders, ")", $env.mirkov.creset, " "
-        ]
+    $mf | str replace --all --regex '\{(\{?[^}]*\}?)\}' {|k|
+      if $k == '&' { return $mirko.reset }
+      if $k starts-with & {
+        let name = $k | str substring 1..
+        return $mirko.styles | get --optional $name | default ""
+      }
+      if $k starts-with ! {
+        let name = $k | str substring 1..
+        return $env | get --optional $name | default ""
+      }
+
+      let opt = $k starts-with ?
+      mut k = if $k =~ ^[/?] { $k | str substring 1.. } else { $k }
+
+      if $k == duration {
+        let duration = history | last | get --optional duration
+        return (if $duration != null { $duration | into string | str replace --all ' ' ''} else {'--'})
+      }
+
+      if $k starts-with 'jobs' {
+        $k = $k | str substring 4..
+        let fill = if $opt { if $k starts-with : { $k | str substring 1.. } else {' '} } else {''}
+        let jobs = jobs list | length
+        return (if $jobs == 0 and $opt {''} else { $"($fill)($jobs)" })
+      }
+
+      if $k starts-with 'status_code' {
+        $k = $k | str substring 11..
+        let fill = if $opt { if $k starts-with : { $k | str substring 1.. } else {' '} } else {''}
+        return (if $env.LAST_EXIT_CODE == 0 and $opt {''} else { $"($fill)($env.LAST_EXIT_CODE)" })
+      }
+
+      if $k starts-with 'signal_name' {
+        $k = $k | str substring 11..
+        let fill = if $opt { if $k starts-with : { $k | str substring 1.. } else {' '} } else {''}
+        return (if $env.LAST_EXIT_CODE <= 128 and $opt {''} else {
+          let code = $env.LAST_EXIT_CODE
+          let sig = match ($code - 128) {
+            1 => 'SIGHUP'
+            2 => 'SIGINT'
+            3 => 'SIGQUIT'
+            4 => 'SIGILL'
+            5 => 'SIGTRAP'
+            6 => 'SIGABRT'
+            7 => 'SIGBUS'
+            8 => 'SIGFPE'
+            9 => 'SIGKILL'
+            10 => 'SIGUSR1'
+            11 => 'SIGSEGV'
+            12 => 'SIGUSR2'
+            13 => 'SIGPIPE'
+            14 => 'SIGALRM'
+            15 => 'SIGTERM'
+            16 => 'SIGSTKFLT'
+            17 => 'SIGCHLD'
+            18 => 'SIGCONT'
+            19 => 'SIGSTOP'
+            20 => 'SIGTSTP'
+            21 => 'SIGTTIN'
+            22 => 'SIGTTOU'
+            23 => 'SIGURG'
+            24 => 'SIGXCPU'
+            25 => 'SIGXFSZ'
+            26 => 'SIGVTALRM'
+            27 => 'SIGPROF'
+            28 => 'SIGWINCH'
+            29 => 'SIGIO'
+            30 => 'SIGPWR'
+            31 => 'SIGSYS'
+            _ => $"SIG($code)"
+          }
+          $"($fill)($sig)"
+        })
+      }
+
+      $k
+    }
+  }
+
+  let value = match $mkind {
+    "pwd" => {
+      $format | str replace --all --regex '\{(\{?[^}]*\}?)\}' {|k|
+        match $k {
+          "short" => {
+            let path_parts = ($in | path split)
+
+            $path_parts | drop 1 | each { |part|
+              match $part {
+                "" => $part,
+                $s if ($s | str starts-with ".") => ($s | str substring 0..1),
+                $s => ($s | str substring 0..0)
+              }
+            } | append ($path_parts | last) | path join
+          }
+          _ => $k
+        }
       }
     }
-
-    let duration = history | last | get --optional duration
-    if $duration != null {
-      $duration | into string | str replace --regex --all '([0-9]+)' $"($env.mirkov.cduration)${1}($env.mirkov.creset)"
-    }
+    _ => $format
   }
 
-  $parts ++= [$env.mirkov.ctime, (date now | format date '%X' |
-    | str replace --regex --all "([/:])" $"($env.mirkov.ctime_sep)${1}($env.mirkov.ctime)"
-    | str replace --regex --all "([AP]M)" $"($env.mirkov.ctime_period)${1}($env.mirkov.creset)"
-  )]
+  let style_name = $module | get --optional style
+  let style = if $style_name != null {
+    $mirko.styles | get --optional $style_name
+  }
 
-  $parts | str join
+  if $style != null {
+    $"($style)($value)(ansi reset)"
+  } else {
+    $value
+  }
 }
 
-# Initialize config file
-let mirko_path = ([$env.HOME, ".config", "mirkop.yaml"] | path join)
+do $mirkop_field_filler time
 
-if not ($mirko_path | path exists) {
-  open ([$nu.default-config-dir, "mirkop.yaml"] | path join) |
-    update str.user $env.USER |
-    update str.host (uname).nodename |
-    to yaml | save -f $mirko_path
-}
-
-$env.mirko = ($mirko_path | open)
-
-# Set up git colors
-$env.mirko.color.git =   {
-  i: (ansi $env.mirko.color.git.i) # Insertion
-  d: (ansi $env.mirko.color.git.d) # Deletion
-  a: (ansi $env.mirko.color.git.a) # Anything
-  s: (ansi $env.mirko.color.git.s) # Separators
-}
-
-# Distinguish between a SSH connection and a local shell session
-$env.mirko.str.from = (if ($env.SSH_TTY? | default nothing) == nothing { $env.mirko.str.from.base } else { $env.mirko.str.from.sshd })
-
-# PWD shortening variables, last short path and short
-$env.mirkov = {
-  # last, short version, current
-  ldir: "",
-  sdir: "",
-  cdir: "",
-  cuser: (ansi --escape $env.mirko.color.user),
-  cfrom: (ansi --escape $env.mirko.color.from),
-  chost: (ansi --escape $env.mirko.color.host),
-  cnorm: (ansi --escape $env.mirko.color.normal)
-
-  creset:       (ansi reset),
-  ctime:        (ansi grey74),
-  ctime_sep:    (ansi grey85),
-  ctime_period: (ansi white_underline),
-  cduration:    (ansi plum1),
-  cerr:         (ansi rb)
-}
-
-# PROMPT_INDICATOR character for admin|sudo and normal user
-$env.mirko.str.char = (if (is-admin) { $env.mirko.str.char.root } else { $env.mirko.str.char.else })
-$env.mirko.str.char = $"(ansi --escape $env.mirko.color.normal)($env.mirko.str.char)(ansi reset) "
-
-$env.PROMPT_COMMAND = {|| __left_prompt_command }
-$env.PROMPT_COMMAND_RIGHT = {|| __right_prompt_command }
-$env.PROMPT_INDICATOR = {|| $env.mirko.str.char }
-
-if $env.mirko.transient == true {
-  $env.TRANSIENT_PROMPT_COMMAND = {|| __left_prompt_command --transient }
-  $env.TRANSIENT_PROMPT_COMMAND_RIGHT = {|| __right_prompt_command --transient }
-  $env.TRANSIENT_PROMPT_INDICATOR = {|| $env.mirko.str.char }
-}
+# $env.PROMPT_COMMAND = {|| __left_prompt_command }
+# $env.PROMPT_COMMAND_RIGHT = {|| __right_prompt_command }
+# $env.PROMPT_INDICATOR = {|| '' }
+#
+# if ($mirko.prompt.transient | describe) starts-with 'record' {
+#   $env.TRANSIENT_PROMPT_COMMAND = {|| __left_prompt_command --transient }
+#   $env.TRANSIENT_PROMPT_COMMAND_RIGHT = {|| __right_prompt_command --transient }
+#   $env.TRANSIENT_PROMPT_INDICATOR = {|| '' }
+# }

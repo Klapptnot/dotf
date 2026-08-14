@@ -1,13 +1,5 @@
 # 🔗 https://github.com/klapptnot/dotf
 
-for kv in (open ~/.config/dotf/props.yaml | get shell_environment | transpose key val) {
-  if ($kv.val | str starts-with '$ ') {
-    load-env { $kv.key: (bash -c ($kv.val | str substring 2..)) }
-  } else {
-    load-env { $kv.key: $kv.val }
-  }
-}
-
 # binding: revert last Ctrl+Z freezing
 def __unfreeze_last_app []: nothing -> nothing {
   let frozen  = job list | where type == frozen | last
@@ -49,13 +41,15 @@ def get-ip []: nothing -> nothing {
   http get --headers ['user-agent' 'curl'] ifconfig.me
 }
 
-alias uwu = sudo
+# load-env wrapper for compat
+def --env set-env [key: string, val: any]: nothing -> nothing {
+  load-env { $key: $val }
+}
+
 alias wdc = windscribe-cli
-alias snek = python
 alias nano = vim
 alias lg = lazygit
 alias git = git --no-pager
-alias systemctl = systemctl --no-pager
 
 source ~/.config/nushell/scripts/compsrc.nu   # All completion sources
-source ~/.config/nushell/scripts/mirkop.nu    # Prompt functions
+source ~/.config/nushell/scripts/prompt.nu    # Prompt functions

@@ -12,14 +12,14 @@
 }
 
 .battery-alert-window {
-  background-color: var(--base);
+  background-color: var(--color-background);
   border-radius: 8px;
-  border: 2px solid var(--accent);
-  box-shadow: 0 8px 32px alpha(var(--crust), 0.8);
+  border: 2px solid var(--color-primary);
+  box-shadow: 0 8px 32px alpha(var(--color-scrim), 0.8);
 }
 
 .battery-alert-window decoration {
-  background-color: var(--base);
+  background-color: var(--color-background);
   border-radius: 16px 16px 0 0;
 }
 
@@ -30,22 +30,22 @@
 }
 
 .battery-alert-label-container {
-  background-color: var(--surface0);
+  background-color: var(--color-surface-low);
   border-radius: 12px;
   padding: 15px 10px 15px 10px;
   margin-bottom: 20px;
-  border: 1px solid var(--surface1);
+  /* border: 1px solid var(--color-outline-variant); */
 }
 
 .battery-alert-header {
-  color: var(--red);
+  color: var(--color-error);
   font-weight: bold;
   font-size: 18px;
-  text-shadow: 0 1px 2px alpha(var(--crust), 0.5);
+  text-shadow: 0 1px 2px alpha(var(--color-scrim), 0.5);
 }
 
 .battery-alert-info {
-  color: var(--text);
+  color: var(--color-on-background);
   font-size: 14px;
   opacity: 0.9;
 }
@@ -56,9 +56,9 @@
 }
 
 .battery-alert-action-btn {
-  background-color: var(--peach);
-  color: var(--mantle);
-  border: 2px solid var(--yellow);
+  background-color: var(--color-tertiary);
+  color: var(--color-on-tertiary);
+  border: 2px solid var(--color-tertiary-container);
   border-radius: 8px;
   padding: 8px;
   font-size: 18px;
@@ -67,23 +67,23 @@
 }
 
 .battery-alert-action-btn:hover {
-  background-color: var(--yellow);
-  border-color: var(--peach);
-  color: var(--crust);
+  background-color: var(--color-tertiary-container);
+  border-color: var(--color-tertiary);
+  color: var(--color-on-tertiary-container);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px alpha(var(--peach), 0.3);
+  box-shadow: 0 4px 12px alpha(var(--color-tertiary), 0.3);
 }
 
 .battery-alert-action-btn:active {
-  background-color: var(--maroon);
+  background-color: var(--color-error-container);
   transform: translateY(0);
-  box-shadow: 0 2px 6px alpha(var(--peach), 0.2);
+  box-shadow: 0 2px 6px alpha(var(--color-tertiary), 0.2);
 }
 
 .battery-alert-close-btn {
-  background-color: var(--accent);
-  color: var(--crust);
-  /* border: 2px solid var(--accent); */
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  /* border: 2px solid var(--color-primary); */
   border-radius: 8px;
   padding: 8px;
   font-size: 18px;
@@ -92,32 +92,31 @@
 }
 
 .battery-alert-close-btn:hover {
-  background-color: var(--ground);
-  /* border-color: var(--ground); */
-  color: var(--mantle);
+  background-color: var(--color-secondary);
+  /* border-color: var(--color-secondary); */
+  color: var(--color-on-secondary);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px alpha(var(--accent), 0.3);
+  box-shadow: 0 4px 12px alpha(var(--color-primary), 0.3);
 }
 
 .battery-alert-close-btn:active {
-  background-color: var(--sapphire);
+  background-color: var(--color-primary-container);
   transform: translateY(0);
-  box-shadow: 0 2px 6px alpha(var(--accent), 0.2);
+  box-shadow: 0 2px 6px alpha(var(--color-primary), 0.2);
 }
 
 .battery-alert-action-btn:disabled,
 .battery-alert-close-btn:disabled {
-  background-color: var(--surface0);
-  color: var(--overlay0);
-  border-color: var(--surface1);
+  background-color: var(--color-surface-variant);
+  color: var(--color-on-surface-variant);
+  border-color: var(--color-outline-variant);
   opacity: 0.6;
   transform: none;
   box-shadow: none;
 }
 
 .battery-alert-label-container:hover {
-  border-color: var(--surface2);
-  background-color: var(--surface1);
+  border-color: var(--color-outline);
+  background-color: var(--color-surface);
   transition: all 200ms ease;
 }
-
